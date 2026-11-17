@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#c2410c">
+  <title>Cook Again 料理筆記</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>🍳 Cook Again</h1>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-view="new">✏️ 記錄</button>
+      <button class="tab" data-view="list">📚 我的料理</button>
+      <button class="tab" data-view="settings">⚙️ 設定</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ 新增 / 編輯紀錄 ============ -->
+    <section id="view-new" class="view active">
+      <div id="setup-hint" class="notice warn hidden">
+        還沒連接 Google 試算表 — 先到 <a href="#" data-goto="settings">⚙️ 設定</a> 填入網址，紀錄才會上傳。（未連接前會自動暫存在這台裝置）
+      </div>
+      <div id="edit-banner" class="notice hidden"></div>
+      <div id="improve-banner" class="notice tip hidden"></div>
+
+      <form id="recipe-form" autocomplete="off">
+        <fieldset class="card">
+          <legend>基本資料</legend>
+          <label>料理名稱 *
+            <input name="dishName" list="dish-list" required placeholder="例如：紅燒牛肉麵、巴斯克乳酪蛋糕">
+            <datalist id="dish-list"></datalist>
+          </label>
+          <div class="grid2">
+            <label>類別
+              <select name="category">
+                <option>中式</option><option>西式</option><option>日式</option><option>韓式</option>
+                <option>東南亞</option><option>甜點</option><option>烘焙</option><option>飲品</option><option>其他</option>
+              </select>
+            </label>
+            <label>料理日期
+              <input type="date" name="date">
+            </label>
+            <label>份量
+              <input name="servings" placeholder="例如：2 人份 / 6 吋">
+            </label>
+            <label>花費時間（分鐘）
+              <input type="number" name="timeMinutes" min="0" inputmode="numeric">
+            </label>
+          </div>
+          <label>參考來源（網址、書名、誰教的）
+            <input name="source" placeholder="選填">
+          </label>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>食材與調味料</legend>
+          <div id="ingredients"></div>
+          <button type="button" class="btn ghost" id="add-ingredient">＋ 新增食材</button>
+          <details class="bulk">
+            <summary>一次貼上多行食材</summary>
+            <textarea id="bulk-ingredients" rows="4" placeholder="每行一樣，名稱和份量用空白隔開&#10;牛腱 600g&#10;醬油 3 大匙"></textarea>
+            <button type="button" class="btn ghost" id="bulk-add">加入</button>
+          </details>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>烹煮步驟（可附過程照片）</legend>
+          <div id="steps"></div>
+          <button type="button" class="btn ghost" id="add-step">＋ 新增步驟</button>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>成品與檢討</legend>
+          <label>成品照片</label>
+          <div class="photo-box" id="final-photos"></div>
+          <label class="btn ghost file-btn">📷 拍照 / 選照片
+            <input type="file" accept="image/*" multiple id="final-photo-input" hidden>
+          </label>
+
+          <label>評分</label>
+          <div class="stars" id="stars" role="radiogroup" aria-label="評分">
+            <button type="button" data-v="1">★</button><button type="button" data-v="2">★</button><button type="button" data-v="3">★</button><button type="button" data-v="4">★</button><button type="button" data-v="5">★</button>
+          </div>
+
+          <label>成品心得（味道、口感、賣相、家人反應）
+            <textarea name="resultNotes" rows="3"></textarea>
+          </label>
+          <label>這次的問題 / 改進建議
+            <textarea name="improvements" rows="3" placeholder="例如：太鹹、肉燉不夠軟、蛋糕中心沒熟…"></textarea>
+          </label>
+          <label>下次要怎麼調整（下次做時會自動提醒你）
+            <textarea name="nextTime" rows="3" placeholder="例如：醬油減為 2 大匙、燉煮延長到 90 分鐘"></textarea>
+          </label>
+          <label>標籤（用逗號分隔）
+            <input name="tags" placeholder="例如：宴客, 快速, 減醣">
+          </label>
+        </fieldset>
+
+        <div class="actions sticky">
+          <button type="button" class="btn ghost" id="preview-btn">📝 產生文字食譜</button>
+          <button type="submit" class="btn primary" id="save-btn">💾 儲存紀錄</button>
+        </div>
+        <button type="button" class="btn link" id="reset-btn">清空表單，重新開始</button>
+      </form>
+    </section>
+
+    <!-- ============ 紀錄列表 ============ -->
+    <section id="view-list" class="view">
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="搜尋料理名稱、食材、標籤…">
+        <button class="btn ghost" id="refresh-btn" title="重新載入">🔄</button>
+      </div>
+      <div class="chips" id="category-chips"></div>
+      <div id="list-status" class="muted"></div>
+      <div id="dish-groups"></div>
+    </section>
+
+    <!-- ============ 設定 ============ -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <h2>連接 Google 試算表</h2>
+        <p class="muted">照著 <a href="https://github.com/samsongrace521/cook-again/blob/main/docs/SETUP.md" target="_blank">安裝教學</a> 部署 Apps Script 後，把拿到的網址和你設定的密碼貼在這裡。</p>
+        <label>Apps Script 網頁應用程式網址
+          <input id="api-url" placeholder="https://script.google.com/macros/s/……/exec">
+        </label>
+        <label>密碼（API_TOKEN，要和 Code.gs 裡的一樣）
+          <input id="api-token" type="password">
+        </label>
+        <div class="actions">
+          <button class="btn ghost" id="test-btn">🔌 測試連線</button>
+          <button class="btn primary" id="save-settings">儲存設定</button>
+        </div>
+        <div id="settings-status"></div>
+      </div>
+      <div class="card">
+        <h2>暫存在這台裝置的紀錄</h2>
+        <p class="muted">沒連上網路或還沒設定時儲存的紀錄，會放在這裡等待上傳。</p>
+        <div id="pending-list"></div>
+        <button class="btn ghost" id="sync-btn">⬆️ 全部上傳</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 文字食譜 / 詳細內容 對話框 -->
+  <dialog id="modal">
+    <div class="modal-head">
+      <h2 id="modal-title"></h2>
+      <button class="btn link" id="modal-close" aria-label="關閉">✕</button>
+    </div>
+    <div id="modal-body"></div>
+    <div class="actions" id="modal-actions"></div>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
